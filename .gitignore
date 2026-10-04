@@ -1,0 +1,29 @@
+# Keil generated build output and local IDE state
+**/Objects/
+**/Listings/
+*.uvguix.*
+*.uvgui.*
+*.uvopt
+*.bak
+*.tmp
+*.build_log.htm
+*.o
+*.obj
+*.axf
+*.hex
+*.bin
+*.elf
+*.map
+*.lst
+*.crf
+*.d
+*.dep
+*.lnp
+
+# Local logs may contain machine paths and license information
+*.log
+
+# Operating system files
+Thumbs.db
+Desktop.ini
+.DS_Store
