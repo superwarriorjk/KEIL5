@@ -10,16 +10,13 @@
 | `SF6/STREETFIGHT6.uvprojx` | 主工程入口 |
 | `SF6/main.c` | 主工程输入、动作队列和输出逻辑 |
 | `SF6/RTE/` | 启动代码、时钟配置及运行环境配置 |
-| `SF6/beifen.c` | 备份源码，目前整份代码处于注释中 |
 | `SF6/jb6.docx` | 接线表和历史代码记录 |
-| `SF6/BEIFEN/sangerfu/laosang.uvprojx` | 保留的另一套宏动作工程 |
 | `AGENTS.md` | 项目架构约束与修改要求 |
 
 ## 打开工程
 
 使用 Keil µVision 打开 `SF6/STREETFIGHT6.uvprojx`。
 工程配置使用 ARM Compiler 5.06 update 3 和 Keil STM32F1xx_DFP 1.0.5。
-另一个版本可单独打开 `SF6/BEIFEN/sangerfu/laosang.uvprojx`。
 
 源码时钟配置以外部 8 MHz 晶振为基础，目标主频为 72 MHz。
 在该主频下，SysTick 周期约为 16.7 ms。
@@ -37,5 +34,7 @@
 ## 本地版本管理
 
 仓库工作目录为 `D:\UINIVERSITY\KEIL5\GITKU`。
-本仓库由原目录中的项目文件复制建立，原始 `SF6` 目录仍保留。
-两份目录是独立副本；后续需要提交的修改应在本仓库中进行。
+所有项目修改统一在本仓库中进行，主工程位于仓库内的 `SF6` 目录。
+外层旧 `SF6` 副本已移除，当前只保留这一套开发工程。
+历史版本通过 Git 提交保存，使用 `git log`、`git diff` 和 `git show` 查阅，不再复制项目或建立备份版本文件夹。
+每完成一个独立修改任务，验证后提交到本地 Git，并同步到 GitHub。

@@ -384,11 +384,6 @@
               <FileType>1</FileType>
               <FilePath>.\main.c</FilePath>
             </File>
-            <File>
-              <FileName>beifen.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\beifen.c</FilePath>
-            </File>
           </Files>
         </Group>
         <Group>
