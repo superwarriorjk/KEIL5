@@ -1,0 +1,8 @@
+#ifndef SF6_CONTROLLER_CONFIG_H
+#define SF6_CONTROLLER_CONFIG_H
+#define FPS 60
+#define MAX_FRAMES 4
+#define HOLD_THRESHOLD 10
+#define QUEUE_LEN 4
+#define SUPER_FRAMES 8
+#endif

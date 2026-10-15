@@ -377,12 +377,107 @@
       </TargetOption>
       <Groups>
         <Group>
-          <GroupName>Source Group 1</GroupName>
+          <GroupName>Application</GroupName>
           <Files>
             <File>
               <FileName>main.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\main.c</FilePath>
+            </File>
+          </Files>
+        </Group>
+        <Group>
+          <GroupName>Board</GroupName>
+          <Files>
+            <File>
+              <FileName>board_io.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Board\board_io.c</FilePath>
+            </File>
+            <File>
+              <FileName>board_io.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\Board\board_io.h</FilePath>
+            </File>
+            <File>
+              <FileName>frame_clock.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Board\frame_clock.c</FilePath>
+            </File>
+            <File>
+              <FileName>frame_clock.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\Board\frame_clock.h</FilePath>
+            </File>
+          </Files>
+        </Group>
+        <Group>
+          <GroupName>Core</GroupName>
+          <Files>
+            <File>
+              <FileName>action_player.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Core\action_player.c</FilePath>
+            </File>
+            <File>
+              <FileName>action_player.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\Core\action_player.h</FilePath>
+            </File>
+            <File>
+              <FileName>action_queue.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Core\action_queue.c</FilePath>
+            </File>
+            <File>
+              <FileName>action_queue.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\Core\action_queue.h</FilePath>
+            </File>
+            <File>
+              <FileName>controller_config.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\Core\controller_config.h</FilePath>
+            </File>
+            <File>
+              <FileName>controller_logic.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Core\controller_logic.c</FilePath>
+            </File>
+            <File>
+              <FileName>controller_logic.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\Core\controller_logic.h</FilePath>
+            </File>
+            <File>
+              <FileName>controller_types.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\Core\controller_types.h</FilePath>
+            </File>
+            <File>
+              <FileName>input_bindings.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\Core\input_bindings.h</FilePath>
+            </File>
+          </Files>
+        </Group>
+        <Group>
+          <GroupName>Profiles</GroupName>
+          <Files>
+            <File>
+              <FileName>character_profile.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Profiles\character_profile.c</FilePath>
+            </File>
+            <File>
+              <FileName>character_profile.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\Profiles\character_profile.h</FilePath>
+            </File>
+            <File>
+              <FileName>current_profile.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Profiles\current_profile.c</FilePath>
             </File>
           </Files>
         </Group>

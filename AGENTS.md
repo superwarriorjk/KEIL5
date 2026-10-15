@@ -14,6 +14,16 @@
 - 用户实测确认、源码推导、图片可见信息与待确认事项必须分别标明。新确认替代旧结论时，更新正文并简记变更，不把过时说法继续作为当前事实。
 - 文档维护随项目工作持续执行；没有新信息时不虚构自动检测结果。
 
+## Source organization and regression checks
+
+- 2026-10-15 根据用户要求完成结构规范化，运行架构与现用行为保持不变。模块职责和扩展方法见 `docs/代码结构与扩展指南.md`，后续结构变更需同步维护。
+- `SF6/main.c` 仅负责初始化、调试输入观察和逐帧调度；硬件寄存器访问放在 `SF6/Board/`，输入绑定、队列和播放器放在 `SF6/Core/`，角色动作数据放在 `SF6/Profiles/`。
+- 当前默认出招表为 `Profiles/current_profile.c`，不将其擅自命名为某个游戏角色。新增角色配置独立建文件，不复制整个工程。
+- 当前有效输入用途以 `Core/input_bindings.h` 为准；保留历史输入位数值，不根据旧名称猜测或恢复绑定。
+- `MAX_FRAMES = 4` 继续限定原有 SP 动作，SUPER 保留 8 帧；后续新增连招使用独立逐帧序列，不擅自改变这些现有参数。
+- 纯结构重构需要通过 Keil 编译和行为回归。`tests/run_regression.py` 在 MSVC x64 开发环境中运行，从 Git 提交 `a01b341` 读取旧版本对比，不保存项目副本。未来有意修改行为时，明确新预期再调整测试，不能为通过测试直接删除失败检查。
+- `tests/stubs/` 仅用于电脑端验证，绝不能加入 Keil 固件的包含路径或工程源文件。
+
 ## Mandatory architecture
 
 后续修改必须严格保留以下结构：
@@ -142,7 +152,7 @@
 - debug_in
 - queue_head
 - queue_tail
-- TESTFLAG
+- test_flag（当前源码名称；旧文档曾写作 TESTFLAG）
 
 ## Change policy
 
