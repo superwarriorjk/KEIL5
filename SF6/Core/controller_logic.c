@@ -9,11 +9,8 @@ typedef struct
     uint16_t hold_frames;
 } KeyState;
 
-KeyState sp1_key = {0};
-KeyState sp2_key = {0};
-KeyState sp3_key = {0};
-KeyState sp4_key = {0};
 KeyState super_key = {0};
+uint8_t facing_left = 0;
 
 static void UpdateKey(KeyState *k, uint8_t is_pressed)
 {
@@ -25,14 +22,12 @@ static void UpdateKey(KeyState *k, uint8_t is_pressed)
         k->hold_frames = 0;
 }
 
-/* SP1-SP4 key states remain dormant. Only SUPER is bound in this baseline.
- * HOLD_THRESHOLD and the legacy trigger branches are intentionally retained. */
+/* The special-move key is reserved until its move table is specified. */
 int test_flag = 10;
 
 OUT_STATE Logic_Process(IN_STATE in)
 {
     OUT_STATE out = 0;
-    uint8_t mirror = (in & BIND_MIRROR) ? 1 : 0;
     uint8_t dir = 3;
 
     UpdateKey(&super_key, (in & BIND_SUPER) ? 1 : 0);
@@ -53,19 +48,16 @@ OUT_STATE Logic_Process(IN_STATE in)
         test_flag = 0;
     }
 
-    if (!sp1_key.prev && sp1_key.pressed)
-        EnqueueAction((sp1_key.hold_frames >= HOLD_THRESHOLD) ? ACT_SP1_HOLD : ACT_SP1, dir);
-    if (!sp2_key.prev && sp2_key.pressed)
-        EnqueueAction((sp2_key.hold_frames >= HOLD_THRESHOLD) ? ACT_SP2_HOLD : ACT_SP2, dir);
-    if (!sp3_key.prev && sp3_key.pressed)
-        EnqueueAction((sp3_key.hold_frames >= HOLD_THRESHOLD) ? ACT_SP3_HOLD : ACT_SP3, dir);
-    if (!sp4_key.prev && sp4_key.pressed)
-        EnqueueAction((sp4_key.hold_frames >= HOLD_THRESHOLD) ? ACT_SP4_HOLD : ACT_SP4, dir);
     if (!super_key.prev && super_key.pressed)
-        EnqueueAction(ACT_SUPER, dir);
+    {
+        if (!(in & BIND_DIRECTIONS))
+            facing_left ^= 1;
+        else if (dir != 3)
+            EnqueueAction(ACT_SUPER, dir, facing_left);
+    }
 
     /* A macro owns the entire output frame, even when its output is zero. */
-    if (ActionPlayer_Process(mirror, &out))
+    if (ActionPlayer_Process(&out))
         return out;
 
     /* Ordinary inputs are never mirrored. */
@@ -91,7 +83,5 @@ OUT_STATE Logic_Process(IN_STATE in)
         out |= OUT_HK;
     if (in & BIND_MEDIUM_PAIR)
         out |= OUT_MP | OUT_MK;
-    if (in & BIND_THROW)
-        out |= OUT_LP | OUT_LK;
     return out;
 }

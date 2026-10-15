@@ -1,6 +1,7 @@
 """Compare the modular firmware against the committed working baseline.
 
 Run from an x64 MSVC developer command prompt: python tests/run_regression.py
+Or supply --cc with a portable GCC-compatible C compiler (tested with TinyCC).
 The historical source is read from Git into a temporary build directory;
 no duplicate project/backup is stored in the repository.
 """
@@ -9,14 +10,18 @@ import re
 import shutil
 import subprocess
 import tempfile
+import argparse
 
 ROOT = Path(__file__).resolve().parents[1]
 BASELINE = "a01b34162f16ca036cab11fd1f001bc98421704f"
 
 
 def main():
-    if not shutil.which("cl"):
-        raise SystemExit("Use an x64 MSVC developer command prompt (cl.exe required).")
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--cc", help="Optional GCC-compatible host C compiler")
+    args = parser.parse_args()
+    if not args.cc and not shutil.which("cl"):
+        raise SystemExit("Use an x64 MSVC developer prompt or supply --cc compiler.exe.")
     source = subprocess.check_output(
         ["git", "show", f"{BASELINE}:SF6/main.c"], cwd=ROOT
     ).decode("utf-8", errors="replace").replace("\r\n", "\n").replace("\r", "\n")
@@ -36,9 +41,15 @@ def main():
         sources = [ROOT / "tests/regression.c", legacy]
         for folder in ("Core", "Board", "Profiles"):
             sources.extend(sorted((ROOT / "SF6" / folder).glob("*.c")))
-        subprocess.run(["cl", "/nologo", "/std:c11", "/W3", "/O2",
+        if args.cc:
+            command = [args.cc, "-std=c11", "-O2",
+                       f"-I{ROOT / 'tests/stubs'}", f"-I{ROOT / 'SF6'}",
+                       *map(str, sources), "-o", "regression.exe"]
+        else:
+            command = ["cl", "/nologo", "/std:c11", "/W3", "/O2",
                         f"/I{ROOT / 'tests/stubs'}", f"/I{ROOT / 'SF6'}",
-                        *map(str, sources), "/Fe:regression.exe"], cwd=build, check=True)
+                        *map(str, sources), "/Fe:regression.exe"]
+        subprocess.run(command, cwd=build, check=True)
         subprocess.run([str(build / "regression.exe")], cwd=build, check=True)
 
 

@@ -4,6 +4,7 @@
 #include "stm32f10x.h"
 #include "Core/controller_logic.h"
 #include "Core/action_player.h"
+#include "Core/input_bindings.h"
 #include "Board/board_io.h"
 #include "Board/frame_clock.h"
 
@@ -13,11 +14,13 @@ TestAFIO test_afio;
 TestSysTick test_systick;
 
 typedef struct { uint8_t pressed, prev; uint16_t hold_frames; } KeyState;
-extern KeyState sp1_key, sp2_key, sp3_key, sp4_key, super_key;
+extern KeyState super_key;
 extern KeyState old_sp1_key, old_sp2_key, old_sp3_key, old_sp4_key, old_super_key;
-extern Action old_action_queue[QUEUE_LEN];
+typedef struct { uint8_t type, dir; } LegacyAction;
+typedef struct { uint8_t active, type, frame, dir; } LegacyActionState;
+extern LegacyAction old_action_queue[QUEUE_LEN];
 extern uint8_t old_queue_head, old_queue_tail;
-extern ActionState old_current_action;
+extern LegacyActionState old_current_action;
 extern int old_test_flag;
 extern volatile uint8_t old_tick_flag;
 OUT_STATE old_Logic_Process(IN_STATE in);
@@ -46,9 +49,11 @@ static void Reset(void)
 {
     KeyState zero = {0};
     ActionState idle = {0};
-    sp1_key = sp2_key = sp3_key = sp4_key = super_key = zero;
+    super_key = zero;
+    facing_left = 0;
     old_sp1_key = old_sp2_key = old_sp3_key = old_sp4_key = old_super_key = zero;
-    current_action = old_current_action = idle;
+    current_action = idle;
+    memset(&old_current_action, 0, sizeof(old_current_action));
     queue_head = queue_tail = old_queue_head = old_queue_tail = 0;
     memset(action_queue, 0, sizeof(action_queue));
     memset(old_action_queue, 0, sizeof(old_action_queue));
@@ -57,13 +62,26 @@ static void Reset(void)
 
 static OUT_STATE Step(IN_STATE in)
 {
+    unsigned int i;
     OUT_STATE expected = old_Logic_Process(in);
-    OUT_STATE actual = Logic_Process(in);
+    /* Compare preserved behavior through the new physical binding.
+     * Throw is now the ordinary LP+LK chord. Neutral SUPER is tested below. */
+    IN_STATE mapped = in & ~(IN_SP1 | IN_SP4 | IN_X);
+    OUT_STATE actual;
+    if (in & IN_SP1) mapped |= BIND_SUPER;
+    if (in & IN_X) mapped |= IN_LP | IN_LK;
+    actual = Logic_Process(mapped);
     frames_checked++;
     REQUIRE(actual == expected);
     REQUIRE(queue_head == old_queue_head && queue_tail == old_queue_tail);
-    REQUIRE(memcmp(action_queue, old_action_queue, sizeof(action_queue)) == 0);
-    REQUIRE(memcmp(&current_action, &old_current_action, sizeof(current_action)) == 0);
+    for (i = 0; i < QUEUE_LEN; ++i) {
+        REQUIRE(action_queue[i].type == old_action_queue[i].type);
+        REQUIRE(action_queue[i].dir == old_action_queue[i].dir);
+    }
+    REQUIRE(current_action.active == old_current_action.active);
+    REQUIRE(current_action.type == old_current_action.type);
+    REQUIRE(current_action.frame == old_current_action.frame);
+    REQUIRE(current_action.dir == old_current_action.dir);
     REQUIRE(memcmp(&super_key, &old_super_key, sizeof(super_key)) == 0);
     REQUIRE(test_flag == old_test_flag);
     return actual;
@@ -72,22 +90,25 @@ static OUT_STATE Step(IN_STATE in)
 static void Enqueue(uint8_t type, uint8_t dir)
 {
     old_EnqueueAction(type, dir);
-    EnqueueAction(type, dir);
+    EnqueueAction(type, dir, facing_left);
 }
 
 static void TestLogic(void)
 {
     unsigned int in, type, dir, mirror, frame, i;
     const uint8_t types[] = {1, 2, 3, 4, 5, 11, 12, 13, 14};
-    /* Every 19-bit input combination from a released state. */
-    for (in = 0; in < (1U << 19); ++in) { Reset(); Step(in); }
+    /* Exhaustive preserved ordinary inputs. Changed triggers are tested below. */
+    for (in = 0; in < (1U << 19); ++in) {
+        Reset(); Step(in & ~(IN_SP1 | IN_SP4));
+    }
 
     /* All defined actions, all direction byte values, both mirror states.
      * Also exercise the dormant actions directly through the queue API. */
     for (type = 0; type < sizeof(types); ++type)
         for (dir = 0; dir < 256; ++dir)
             for (mirror = 0; mirror < 2; ++mirror) {
-                Reset(); Enqueue(types[type], (uint8_t)dir);
+                Reset(); facing_left = (uint8_t)mirror;
+                Enqueue(types[type], (uint8_t)dir);
                 for (frame = 0; frame < 12; ++frame)
                     Step(IN_LP | (mirror ? IN_SP4 : 0));
             }
@@ -104,7 +125,7 @@ static void TestLogic(void)
     Reset();
     for (i = 0; i < 20; ++i) Enqueue(ACT_SUPER, (uint8_t)(i % 4));
     REQUIRE(queue_tail == 3); /* Three waiting slots, overflow drops newest. */
-    for (i = 0; i < 40; ++i) Step((i & 1) ? IN_SP4 : IN_LP);
+    for (i = 0; i < 40; ++i) Step((i & 1) ? 0 : IN_LP);
 
     Reset();
     for (i = 0; i < 70000; ++i) Step(IN_SP1 | IN_RIGHT);
@@ -113,8 +134,84 @@ static void TestLogic(void)
     Reset();
     for (i = 0; i < 200000; ++i) {
         if (i % 17 == 0) Enqueue(types[Random() % sizeof(types)], Random() % 4);
-        Step(Random() & 0x7ffff); /* Queue wraparound, simultaneous inputs, live mirror. */
+        Step(Random() & (0x7ffff & ~(IN_SP1 | IN_SP4)));
     }
+}
+
+static void TestFacingControls(void)
+{
+    unsigned int i, selection, mirror;
+    const IN_STATE directions[] = {BIND_DOWN, BIND_LEFT, BIND_RIGHT};
+    const OUT_STATE expected[3][8] = {
+        {OUT_DOWN, OUT_DOWN|OUT_LEFT, OUT_LEFT, OUT_DOWN,
+         OUT_DOWN|OUT_LEFT, OUT_LEFT, OUT_HP, 0},
+        {OUT_DOWN, OUT_DOWN|OUT_RIGHT, OUT_RIGHT, OUT_DOWN,
+         OUT_DOWN|OUT_RIGHT, OUT_RIGHT, OUT_HK, 0},
+        {OUT_DOWN, OUT_DOWN|OUT_RIGHT, OUT_RIGHT, OUT_DOWN,
+         OUT_DOWN|OUT_RIGHT, OUT_RIGHT, OUT_HP, 0}
+    };
+    Reset();
+    REQUIRE(Logic_Process(BIND_SUPER | IN_LP) == OUT_LP);
+    REQUIRE(facing_left == 1 && queue_head == queue_tail);
+    for (i = 0; i < 70000; ++i) Logic_Process(BIND_SUPER);
+    REQUIRE(facing_left == 1);
+    /* Adding direction after the key cannot start a move. */
+    REQUIRE(Logic_Process(BIND_SUPER | BIND_DOWN) == OUT_DOWN);
+    REQUIRE(!current_action.active && queue_head == queue_tail);
+    Logic_Process(0);
+    Logic_Process(BIND_SUPER);
+    REQUIRE(facing_left == 0);
+    Logic_Process(0);
+    REQUIRE(Logic_Process(BIND_SUPER | BIND_UP) == OUT_UP);
+    REQUIRE(facing_left == 0 && !current_action.active);
+    Logic_Process(BIND_DOWN | BIND_SUPER);
+    REQUIRE(!current_action.active);
+    Logic_Process(0);
+    REQUIRE(Logic_Process(BIND_SPECIAL | IN_SP4) == 0);
+    REQUIRE(facing_left == 0 && !current_action.active);
+    REQUIRE(Logic_Process(IN_LP | IN_LK) == (OUT_LP | OUT_LK));
+
+    for (selection = 0; selection < 3; ++selection)
+        for (mirror = 0; mirror < 2; ++mirror) {
+            Reset(); facing_left = (uint8_t)mirror;
+            /* Same-sample direction is accepted; no mandatory extra frame. */
+            for (i = 0; i < 8; ++i) {
+                OUT_STATE out = expected[selection][i];
+                if (mirror) {
+                    OUT_STATE horizontal = out & (OUT_LEFT | OUT_RIGHT);
+                    out &= ~(OUT_LEFT | OUT_RIGHT);
+                    if (horizontal & OUT_LEFT) out |= OUT_RIGHT;
+                    if (horizontal & OUT_RIGHT) out |= OUT_LEFT;
+                }
+                REQUIRE(Logic_Process(BIND_SUPER | directions[selection]) == out);
+            }
+            REQUIRE(!current_action.active);
+            REQUIRE(Logic_Process(BIND_SUPER) == 0);
+            REQUIRE(facing_left == mirror);
+        }
+
+    /* Active and queued actions retain their trigger-time facing. */
+    Reset();
+    REQUIRE(Logic_Process(BIND_SUPER | BIND_DOWN) == OUT_DOWN);
+    Logic_Process(0);
+    Logic_Process(BIND_SUPER | BIND_RIGHT); /* Queue facing right. */
+    Logic_Process(0);
+    REQUIRE(Logic_Process(BIND_SUPER) == (OUT_DOWN | OUT_LEFT));
+    REQUIRE(facing_left == 1);
+    Logic_Process(0);
+    Logic_Process(BIND_SUPER | BIND_LEFT); /* Queue facing left. */
+    REQUIRE(Logic_Process(0) == 0);
+    for (i = 0; i < 8; ++i) REQUIRE(Logic_Process(0) == expected[2][i]);
+    REQUIRE(Logic_Process(0) == OUT_DOWN);
+    REQUIRE(Logic_Process(0) == (OUT_DOWN | OUT_LEFT));
+    for (i = 0; i < 6; ++i) Logic_Process(0);
+    REQUIRE(Logic_Process(BIND_LEFT) == OUT_LEFT);
+    REQUIRE(Logic_Process(BIND_RIGHT) == OUT_RIGHT);
+
+    Reset();
+    Logic_Process(BIND_DOWN | BIND_LEFT | BIND_RIGHT | BIND_SUPER);
+    REQUIRE(current_action.dir == 0); /* Existing down-left-right priority. */
+    puts("PASS: facing toggle, binding, trigger order, hold, reserved keys, snapshots.");
 }
 
 static void TestHardware(void)
@@ -163,7 +260,7 @@ static void TestHardware(void)
 
 int main(void)
 {
-    TestLogic(); TestHardware();
+    TestLogic(); TestHardware(); TestFacingControls();
     printf("PASS: %lu logic frames; GPIO input/output, initialization and SysTick match baseline.\n",
         frames_checked);
     return 0;

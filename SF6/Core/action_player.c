@@ -1,6 +1,6 @@
 #include "action_player.h"
 #include "../Profiles/character_profile.h"
-ActionState current_action = {0, 0, 0, 0};
+ActionState current_action = {0};
 static OUT_STATE MirrorOutput(OUT_STATE out)
 {
     OUT_STATE result = out & ~(OUT_LEFT | OUT_RIGHT);
@@ -10,7 +10,7 @@ static OUT_STATE MirrorOutput(OUT_STATE out)
         result |= OUT_LEFT;
     return result;
 }
-uint8_t ActionPlayer_Process(uint8_t mirror, OUT_STATE *out)
+uint8_t ActionPlayer_Process(OUT_STATE *out)
 {
     Action next;
     const ActionSequence *sequence;
@@ -19,6 +19,7 @@ uint8_t ActionPlayer_Process(uint8_t mirror, OUT_STATE *out)
         current_action.active = 1;
         current_action.type = next.type;
         current_action.dir = next.dir;
+        current_action.mirror = next.mirror;
         current_action.frame = 0;
     }
     if (!current_action.active)
@@ -27,7 +28,7 @@ uint8_t ActionPlayer_Process(uint8_t mirror, OUT_STATE *out)
     *out = 0;
     if (sequence && current_action.frame < sequence->frame_count)
         *out = sequence->frames[current_action.frame];
-    if (mirror)
+    if (current_action.mirror)
         *out = MirrorOutput(*out);
     current_action.frame++;
     if (sequence && current_action.frame >= sequence->frame_count)

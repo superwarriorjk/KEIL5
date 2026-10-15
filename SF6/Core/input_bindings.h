@@ -6,8 +6,8 @@
 #define BIND_DOWN IN_DOWN
 #define BIND_LEFT IN_SUPER
 #define BIND_RIGHT IN_RIGHT
-#define BIND_SUPER IN_SP1
-#define BIND_MIRROR IN_SP4
-#define BIND_THROW IN_X
+#define BIND_SPECIAL IN_SP1 /* Reserved; no move assigned yet. */
+#define BIND_SUPER IN_X
+#define BIND_DIRECTIONS (BIND_UP | BIND_DOWN | BIND_LEFT | BIND_RIGHT)
 #define BIND_MEDIUM_PAIR IN_COMBO1
 #endif

@@ -7,8 +7,9 @@ typedef struct
     uint8_t type;
     uint8_t frame;
     uint8_t dir;
+    uint8_t mirror;
 } ActionState;
 extern ActionState current_action;
 /* Returns 1 when this frame belongs to a macro, including a release frame. */
-uint8_t ActionPlayer_Process(uint8_t mirror, OUT_STATE *out);
+uint8_t ActionPlayer_Process(OUT_STATE *out);
 #endif
