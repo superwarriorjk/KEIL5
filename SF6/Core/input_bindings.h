@@ -6,7 +6,7 @@
 #define BIND_DOWN IN_DOWN
 #define BIND_LEFT IN_SUPER
 #define BIND_RIGHT IN_RIGHT
-#define BIND_SPECIAL IN_SP1 /* Reserved; no move assigned yet. */
+#define BIND_SPECIAL IN_SP1 /* Mai: release normal, LK edge OD, neutral MK edge charge. */
 #define BIND_SUPER IN_X
 #define BIND_DIRECTIONS (BIND_UP | BIND_DOWN | BIND_LEFT | BIND_RIGHT)
 #define BIND_MEDIUM_PAIR IN_COMBO1

@@ -8,8 +8,14 @@ typedef struct
     uint8_t frame;
     uint8_t dir;
     uint8_t mirror;
+    uint8_t holding;
+    uint32_t charge_id;
+    uint16_t auto_lp_frames;
 } ActionState;
 extern ActionState current_action;
-/* Returns 1 when this frame belongs to a macro, including a release frame. */
-uint8_t ActionPlayer_Process(OUT_STATE *out);
+/* EXCLUSIVE includes release frames; BLEND adds LP to ordinary input. */
+#define PLAYER_IDLE 0
+#define PLAYER_EXCLUSIVE 1
+#define PLAYER_BLEND 2
+uint8_t ActionPlayer_Process(OUT_STATE *out, uint32_t held_charge_id);
 #endif

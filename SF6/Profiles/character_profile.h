@@ -22,6 +22,7 @@ typedef struct
 } CharacterProfile;
 
 extern const CharacterProfile current_profile;
+extern const CharacterProfile mai_profile;
 const CharacterProfile *CharacterProfile_GetActive(void);
 
 #endif

@@ -11,16 +11,21 @@
 #define ACT_SP2_HOLD 12
 #define ACT_SP3_HOLD 13
 #define ACT_SP4_HOLD 14
+#define ACT_MAI_NORMAL 20
+#define ACT_MAI_OD 21
+#define ACT_MAI_CHARGE 22
 typedef struct
 {
     uint8_t type;
     uint8_t dir;
     uint8_t mirror;
+    uint32_t charge_id;
 } Action;
 /* Exported for the existing debugger watch workflow. */
 extern Action action_queue[QUEUE_LEN];
 extern uint8_t queue_head;
 extern uint8_t queue_tail;
-void EnqueueAction(uint8_t type, uint8_t dir, uint8_t mirror);
+uint8_t EnqueueAction(uint8_t type, uint8_t dir, uint8_t mirror);
+uint8_t EnqueueCharge(uint8_t dir, uint8_t mirror, uint32_t charge_id);
 uint8_t ActionQueue_Pop(Action *action);
 #endif

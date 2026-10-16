@@ -38,7 +38,7 @@ def main():
         build = Path(directory)
         legacy = build / "baseline.c"
         legacy.write_text(source, encoding="utf-8")
-        sources = [ROOT / "tests/regression.c", legacy]
+        sources = [ROOT / "tests/regression.c", ROOT / "tests/mai_regression.c", legacy]
         for folder in ("Core", "Board", "Profiles"):
             sources.extend(sorted((ROOT / "SF6" / folder).glob("*.c")))
         if args.cc:

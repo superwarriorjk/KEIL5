@@ -484,6 +484,11 @@
               <FileType>1</FileType>
               <FilePath>.\Profiles\current_profile.c</FilePath>
             </File>
+            <File>
+              <FileName>mai_profile.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Profiles\mai_profile.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>

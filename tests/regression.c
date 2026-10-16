@@ -50,6 +50,7 @@ static void Reset(void)
     KeyState zero = {0};
     ActionState idle = {0};
     super_key = zero;
+    memset(&special_session, 0, sizeof(special_session));
     facing_left = 0;
     old_sp1_key = old_sp2_key = old_sp3_key = old_sp4_key = old_super_key = zero;
     current_action = idle;
@@ -169,7 +170,9 @@ static void TestFacingControls(void)
     Logic_Process(0);
     REQUIRE(Logic_Process(BIND_SPECIAL | IN_SP4) == 0);
     REQUIRE(facing_left == 0 && !current_action.active);
-    REQUIRE(Logic_Process(IN_LP | IN_LK) == (OUT_LP | OUT_LK));
+    /* Preparation is silent; a fresh LK while held now intentionally selects OD. */
+    REQUIRE(Logic_Process(BIND_SPECIAL | IN_LP | IN_LK) == OUT_DOWN);
+    REQUIRE(current_action.type == ACT_MAI_OD);
 
     for (selection = 0; selection < 3; ++selection)
         for (mirror = 0; mirror < 2; ++mirror) {
@@ -258,9 +261,11 @@ static void TestHardware(void)
     REQUIRE(tick_flag == 1 && tick_flag == old_tick_flag);
 }
 
+void TestMai(void);
+
 int main(void)
 {
-    TestLogic(); TestHardware(); TestFacingControls();
+    TestLogic(); TestHardware(); TestFacingControls(); TestMai();
     printf("PASS: %lu logic frames; GPIO input/output, initialization and SysTick match baseline.\n",
         frames_checked);
     return 0;
